@@ -3,7 +3,7 @@ import struct
 import time
 
 # ESP32 Configuration
-ESP32_IP = "192.168.1.100"
+ESP32_IP = "192.168.1.7"
 ESP32_PORT = 12345
 
 def calculate_checksum(data):

@@ -2,8 +2,12 @@
 #include <WiFi.h>
 #include "Config.h"
 #include "UdpCalculator.h"
+#include "TcpCalculator.h"
+#include "TextCalculator.h"
 
-UdpCalculator calculator(localPort);
+UdpCalculator udpCalc(localPort);
+TcpCalculator tcpCalc(localPort + 1);
+TextCalculator textCalc(localPort + 2, localPort + 3);
 
 void setup() {
   Serial.begin(115200);
@@ -21,10 +25,15 @@ void setup() {
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
-  // Start the calculator service
-  calculator.begin();
+  // Start the services
+  udpCalc.begin();
+  tcpCalc.begin();
+  textCalc.begin();
 }
 
 void loop() {
-  calculator.handlePackets();
+  udpCalc.handlePackets();
+  tcpCalc.handleClients();
+  textCalc.handleUdp();
+  textCalc.handleTcp();
 }

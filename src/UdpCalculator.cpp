@@ -16,7 +16,7 @@ void UdpCalculator::handlePackets() {
     _udp.read((uint8_t*)&p, sizeof(CalcPacket));
 
     if (p.header == 0xAA && p.checksum == calculateChecksum(p)) {
-      processCalculation(p);
+      processCalculation(p, _udp.remoteIP(), _udp.remotePort());
     } else {
       Serial.println("Invalid Packet (Bad Header or Checksum)");
     }
@@ -34,38 +34,35 @@ uint8_t UdpCalculator::calculateChecksum(const CalcPacket& p) {
   return sum;
 }
 
-void UdpCalculator::processCalculation(const CalcPacket& p) {
-  Serial.println("--- Packet Received ---");
-  
-  float result = 0;
-  String opName = "";
+uint8_t UdpCalculator::calculateResChecksum(const ResPacket& p) {
+  uint8_t* ptr = (uint8_t*)&p;
+  uint8_t sum = 0;
+  for (size_t i = 0; i < sizeof(ResPacket) - 1; i++) {
+    sum += ptr[i];
+  }
+  return sum;
+}
 
+void UdpCalculator::processCalculation(const CalcPacket& p, IPAddress remoteIP, uint16_t remotePort) {
+  float result = 0;
   switch (p.op) {
-    case 1: // Add
-      result = p.val1 + p.val2;
-      opName = "Addition";
-      break;
-    case 2: // Multiple
-      result = p.val1 * p.val2;
-      opName = "Multiplication";
-      break;
-    case 3: // Subtract
-      result = p.val1 - p.val2;
-      opName = "Subtraction";
-      break;
-    default:
-      Serial.println("Unknown Operation!");
-      return;
+    case 1: result = p.val1 + p.val2; break;
+    case 2: result = p.val1 * p.val2; break;
+    case 3: result = p.val1 - p.val2; break;
   }
 
-  Serial.printf("Op: %s\n", opName.c_str());
-  Serial.printf("Value 1: %.2f\n", p.val1);
-  Serial.printf("Value 2: %.2f\n", p.val2);
-  Serial.printf("Result: %.2f\n", result);
-  Serial.println("-----------------------");
+  // Send Response back for latency measurement
+  ResPacket res;
+  res.header = 0xBB;
+  res.result = result;
+  res.checksum = calculateResChecksum(res);
+
+  _udp.beginPacket(remoteIP, remotePort);
+  _udp.write((uint8_t*)&res, sizeof(ResPacket));
+  _udp.endPacket();
 
   // Blink LED to indicate success
   digitalWrite(ledPin, HIGH);
-  delay(50);
+  delay(1); // Very short blink to not block much
   digitalWrite(ledPin, LOW);
 }
