@@ -1,13 +1,9 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include "Config.h"
-#include "UdpCalculator.h"
-#include "TcpCalculator.h"
-#include "TextCalculator.h"
+#include "ActivationService.h"
 
-UdpCalculator udpCalc(localPort);
-TcpCalculator tcpCalc(localPort + 1);
-TextCalculator textCalc(localPort + 2, localPort + 3);
+ActivationService actService(p2pPort);
 
 void setup() {
   Serial.begin(115200);
@@ -25,15 +21,10 @@ void setup() {
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
-  // Start the services
-  udpCalc.begin();
-  tcpCalc.begin();
-  textCalc.begin();
+  // Start the service
+  actService.begin();
 }
 
 void loop() {
-  udpCalc.handlePackets();
-  tcpCalc.handleClients();
-  textCalc.handleUdp();
-  textCalc.handleTcp();
+  actService.handlePackets();
 }
